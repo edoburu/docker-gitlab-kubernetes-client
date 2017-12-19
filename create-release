@@ -12,10 +12,13 @@ KUBE_NAMESPACE="${KUBE_NAMESPACE:-default}"
 # Automatically use a namespace-based tiller if available,
 # or the cluster-wide installed version if this is possible.
 if [ -z "$TILLER_NAMESPACE" ]; then
-  if [ "$(kubectl auth can-i create pods --subresource=portforward --namespace=kube-system)" = "yes" ]; then
+  if [ -n "$( kubectl get pods --namespace=$KUBE_NAMESPACE -l 'app=helm,name=tiller' -o name)"] then
+    echo "Found namespace-based tiller installation"
+    TILLER_NAMESPACE=$KUBE_NAMESPACE
+  elif [ "$(kubectl auth can-i create pods --subresource=portforward --namespace=kube-system)" = "yes" ]; then
     # Can connect with central installed Tiller, use it to deploy the project
     # Note this could mean that deployments have full cluster-admin access!
-    TILLER_NAMESPACE="${TILLER_NAMESPACE:-kube-system}"
+    TILLER_NAMESPACE="kube-system"
     echo "Found cluster-wide tiller installation"
   elif [ "$(kubectl auth can-i create pods --subresource=portforward --namespace=$NAMESPACE)" = "yes" ]; then
     # Can connect with namespace based Tiller
@@ -27,6 +30,12 @@ if [ -z "$TILLER_NAMESPACE" ]; then
 fi
 
 echo "Using tiller in namespace $TILLER_NAMESPACE"
+echo "Deploying app $CI_ENVIRONMENT_SLUG"
+
+test -n "$CI_IMAGE_TAG" || echo 'Warning: $CI_IMAGE_TAG is not set!' >&2
+
+echo "Current release:"
+helm ls --tiller-namespace "$TILLER_NAMESPACE" --namespace "$KUBE_NAMESPACE" $CI_ENVIRONMENT_SLUG
 
 # Follow the app=$CI_ENVIRONMENT_SLUG label that GitLab needs to link releases
 # helm init --client-only is only needed when using default charts
