@@ -65,7 +65,7 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: $TILLER-admin
-  namespace: $NAMESPAE
+  namespace: $NAMESPACE
 roleRef:
   kind: Role
   name: $TILLER-admin
@@ -101,7 +101,7 @@ rules:
   verbs: ["list"]
 - apiGroups: [""]
   resources: ["secrets"]
-  verbs: ["create", "delete"]
+  verbs: ["create", "list", "delete"]
 
 ---
 ## Associate deploy role with $DEPLOY_USER accout
