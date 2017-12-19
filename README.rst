@@ -4,7 +4,9 @@ docker-kubernetes-client
 This is a small image that allows to run ``git``, ``kubectl`` and ``helm``.
 This can be used as GitLab runner image:
 
-In ``.gitlab-ci.yml``::
+In ``.gitlab-ci.yml``:
+
+.. code-block:: yaml
 
     job_name:
       stage: deploy
@@ -20,7 +22,9 @@ In ``.gitlab-ci.yml``::
       - tags
 
 
-Or run the commands manually::
+Or run the commands manually:
+
+.. code-block:: bash
 
   helm upgrade --install --namespace "$KUBE_NAMESPACE" --reset-values "RELEASE_NAME" "CHART_DIR" -f "values-$CI_ENVIRONMENT_SLUG.yml" --set="imageTag=$CI_IMAGE_TAG,nameOverride=$CI_ENVIRONMENT_SLUG"
 
