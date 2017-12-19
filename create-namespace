@@ -55,7 +55,7 @@ metadata:
   name: $TILLER-admin
 rules:
 - apiGroups: ["", "extensions", "apps"]
-  resources: ["deployments", "replicasets", "pods", "configmaps", "secrets", "namespaces"]
+  resources: ["deployments", "replicasets", "pods", "configmaps", "secrets", "namespaces", "persistentvolumeclaims", "persistentvolumes"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"] # You can also use ["*"]
 
 ---
