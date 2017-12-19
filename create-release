@@ -31,3 +31,7 @@ echo "Using tiller in namespace $TILLER_NAMESPACE"
 # Follow the app=$CI_ENVIRONMENT_SLUG label that GitLab needs to link releases
 # helm init --client-only is only needed when using default charts
 helm upgrade --install --tiller-namespace "$TILLER_NAMESPACE" --namespace "$KUBE_NAMESPACE" --reset-values --set="nameOverride=$CI_ENVIRONMENT_SLUG" "$@"
+echo
+echo "Follow the release status using:"
+echo
+echo "  helm status --tiller-namespace=$TILLER_NAMESPACE $1"
