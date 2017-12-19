@@ -47,28 +47,28 @@ metadata:
 
 ---
 ## Create admin role:
-## kubectl create role $TILLER-admin --namespace $NAMESPACE --resource=deployments,replicasets,... --verb=get,list,... --dry-run -o yaml
+## kubectl create role $TILLER --namespace $NAMESPACE --resource=deployments,replicasets,... --verb=get,list,... --dry-run -o yaml
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   namespace: $NAMESPACE
-  name: $TILLER-admin
+  name: $TILLER
 rules:
 - apiGroups: ["", "extensions", "apps"]
-  resources: ["deployments", "replicasets", "pods", "configmaps", "secrets", "namespaces", "persistentvolumeclaims", "persistentvolumes"]
+  resources: ["deployments", "replicasets", "pods", "configmaps", "secrets", "services", "namespaces", "persistentvolumeclaims", "persistentvolumes"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"] # You can also use ["*"]
 
 ---
 ## Associate admin role with $TILLER account
-## kubectl create rolebinding $TILLER-binding --user=$TILLER --role=$TILLER-admin --dry-run -o yaml
+## kubectl create rolebinding $TILLER --user=$TILLER --role=$TILLER --dry-run -o yaml
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
-  name: $TILLER-admin
+  name: $TILLER
   namespace: $NAMESPACE
 roleRef:
   kind: Role
-  name: $TILLER-admin
+  name: $TILLER
   apiGroup: rbac.authorization.k8s.io
 subjects:
 - kind: ServiceAccount
@@ -86,11 +86,11 @@ metadata:
 
 ---
 ## Create deploy role
-## kubectl create role $DEPLOY_USER-role --namespace $NAMESPACE --resource=pods/portforward --verb=create ... --dry-run -o yaml
+## kubectl create role $DEPLOY_USER --namespace $NAMESPACE --resource=pods/portforward --verb=create ... --dry-run -o yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: Role
 metadata:
-  name: $DEPLOY_USER-role
+  name: $DEPLOY_USER
   namespace: $NAMESPACE
 rules:
 - apiGroups: [""]
@@ -105,16 +105,16 @@ rules:
 
 ---
 ## Associate deploy role with $DEPLOY_USER accout
-## kubectl create rolebinding $DEPLOY_USER-binding --user=$DEPLOY_USER --role=$DEPLOY_USER-role --dry-run -o yaml
+## kubectl create rolebinding $DEPLOY_USER --user=$DEPLOY_USER --role=$DEPLOY_USER --dry-run -o yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: RoleBinding
 metadata:
-  name: $DEPLOY_USER-binding
+  name: $DEPLOY_USER
   namespace: $NAMESPACE
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: $DEPLOY_USER-role
+  name: $DEPLOY_USER
 subjects:
 - kind: ServiceAccount
   name: $DEPLOY_USER
@@ -124,7 +124,7 @@ subjects:
 ## Install tiller in $NAMESPACE
 ## helm init --service-account $TILLER --tiller-namespace $NAMESPACE --dry-run -o yaml
 EOF
-helm init --skip-refresh --service-account $TILLER --tiller-namespace $NAMESPACE --history-max 5 $DRY_RUN
+helm init --skip-refresh --upgrade --service-account $TILLER --tiller-namespace $NAMESPACE --history-max 5 $DRY_RUN
 
 
 if [ "$DRY_RUN" == "" ]; then

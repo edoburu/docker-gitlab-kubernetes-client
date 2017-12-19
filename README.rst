@@ -2,6 +2,10 @@ docker-kubernetes-client
 ========================
 
 This is a small image that allows to run ``git``, ``kubectl`` and ``helm``.
+
+Usage from GitLab
+-----------------
+
 This can be used as GitLab runner image:
 
 In ``.gitlab-ci.yml``:
@@ -27,6 +31,15 @@ Or run the commands manually:
 .. code-block:: bash
 
   helm upgrade --install --namespace "$KUBE_NAMESPACE" --reset-values "RELEASE_NAME" "CHART_DIR" -f "values-$CI_ENVIRONMENT_SLUG.yml" --set="imageTag=$CI_IMAGE_TAG,nameOverride=$CI_ENVIRONMENT_SLUG"
+
+It's assumed that the namespace is already set-up.
+This can be done using:
+
+.. code-block:: bash
+
+    docker run --rm  -v "$HOME/.kube:/root/.kube" edoburu/gitlab-kubernetes-client create-namespace mynamespace
+
+This installs Tiller in a single namespace, with a ``tiller`` and ``deploy`` user::
 
 
 Development
