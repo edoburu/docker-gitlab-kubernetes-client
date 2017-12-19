@@ -17,4 +17,8 @@ FROM alpine:3.6
 RUN apk add --update --no-cache git ca-certificates
 COPY --from=build /tmp/kubectl /tmp/helm /bin/
 COPY create-image-pull-secret create-kubeconfig create-namespace create-release /bin/
+
+# Make sure a basic helm layout is installed so helm just works.
+# Users can run `helm repo update` in case anything is needed from the stable/ repo.
+RUN helm init --client-only --skip-refresh
 CMD ["/bin/helm"]

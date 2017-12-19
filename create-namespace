@@ -124,7 +124,7 @@ subjects:
 ## Install tiller in $NAMESPACE
 ## helm init --service-account $TILLER --tiller-namespace $NAMESPACE --dry-run -o yaml
 EOF
-helm init --service-account $TILLER --tiller-namespace $NAMESPACE --history-max 5 $DRY_RUN
+helm init --skip-refresh --service-account $TILLER --tiller-namespace $NAMESPACE --history-max 5 $DRY_RUN
 
 
 if [ "$DRY_RUN" == "" ]; then
