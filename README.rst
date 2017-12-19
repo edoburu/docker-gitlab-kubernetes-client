@@ -28,3 +28,16 @@ Or run the commands manually:
 
   helm upgrade --install --namespace "$KUBE_NAMESPACE" --reset-values "RELEASE_NAME" "CHART_DIR" -f "values-$CI_ENVIRONMENT_SLUG.yml" --set="imageTag=$CI_IMAGE_TAG,nameOverride=$CI_ENVIRONMENT_SLUG"
 
+
+Development
+-----------
+
+To build this image::
+
+    docker build -t edoburu/gitlab-kubernetes-client .
+
+And release::
+
+    docker login
+    docker push edoburu/gitlab-kubernetes-client
+
