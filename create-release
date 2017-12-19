@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+
+if [ -z "$1" -o -z "$2" ]; then
+  echo "Usage: $0 RELEASE-NAME CHART_DIR [helm-args]" >&2
+  echo "e.g.: $0 myapp /myapp/deploy/chart/ -f "values-${CI_ENVIRONMENT_SLUG:-prd}.yml" --set="imageTag=${CI_IMAGE_TAG:-1.0}",nameOverride=\$CI_ENVIRONMENT_SLUG"
+  exit 1
+fi
+
+# Follow the app=$CI_ENVIRONMENT_SLUG label that GitLab needs to link releases
+test -e "$HOME/.helm" || helm init --client-only
+helm upgrade --install --namespace "${KUBE_NAMESPACE:-default}" --reset-values --set="nameOverride=$CI_ENVIRONMENT_SLUG" "$@"

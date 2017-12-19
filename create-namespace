@@ -1,0 +1,154 @@
+#!/bin/sh
+# Based on https://docs.helm.sh/service_accounts/
+
+set -e
+
+if [ -z "$1" ]; then
+ echo "Usage: $0 <namespace(-stg|-prod)> [--dry-run]" >&2
+ exit 1
+fi
+
+NAMESPACE=$1
+TILLER=tiller
+DEPLOY_USER=deploy
+
+if [ "$2" == "--dry-run" ]; then
+  CMD="cat"
+  DRY_RUN="--dry-run -o yaml"
+  echo "Creating namespace: $NAMESPACE" >&2
+  echo "Creating service account: $NAMESPACE/$TILLER" >&2
+  echo "Creating role: $NAMESPACE/$TILLER-admin" >&2
+  echo "Installing tiller on namespace $NAMESPACE" >&2
+elif [ -n "$2" ]; then
+  echo "Usage: $0 $1 [--dry-run]" >&2
+  exit 1
+else
+  CMD="kubectl apply -f -"
+  DRY_RUN=""
+fi
+
+$CMD <<EOF
+---
+## Create namespace $NAMESPACE:
+## kubectl create namespace $NAMESPACE --dry-run -o yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: $NAMESPACE
+
+---
+## Create tiller service account:
+## kubectl create serviceaccount $TILLER --namespace=$NAMESPACE --dry-run -o yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: $TILLER
+  namespace: $NAMESPACE
+
+---
+## Create admin role:
+## kubectl create role $TILLER-admin --namespace $NAMESPACE --resource=deployments,replicasets,... --verb=get,list,... --dry-run -o yaml
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  namespace: $NAMESPACE
+  name: $TILLER-admin
+rules:
+- apiGroups: ["", "extensions", "apps"]
+  resources: ["deployments", "replicasets", "pods", "configmaps", "secrets", "namespaces"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"] # You can also use ["*"]
+
+---
+## Associate admin role with $TILLER account
+## kubectl create rolebinding $TILLER-binding --user=$TILLER --role=$TILLER-admin --dry-run -o yaml
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: $TILLER-admin
+  namespace: $NAMESPAE
+roleRef:
+  kind: Role
+  name: $TILLER-admin
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: $TILLER
+  namespace: $NAMESPACE
+
+---
+## Create deploy account:
+## kubectl create serviceaount $DEPLOY_USER --namespace=$NAMESPACE --dry-run -o yam
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: $DEPLOY_USER
+  namespace: $NAMESPACE
+
+---
+## Create deploy role
+## kubectl create role $DEPLOY_USER-role --namespace $NAMESPACE --resource=pods/portforward --verb=create ... --dry-run -o yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: $DEPLOY_USER-role
+  namespace: $NAMESPACE
+rules:
+- apiGroups: [""]
+  resources: ["pods/portforward"]
+  verbs: ["create"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["list"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create"]
+
+---
+## Associate deploy role with $DEPLOY_USER accout
+## kubectl create rolebinding $DEPLOY_USER-binding --user=$DEPLOY_USER --role=$DEPLOY_USER-role --dry-run -o yaml
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: $DEPLOY_USER-binding
+  namespace: $NAMESPACE
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: $DEPLOY_USER-role
+subjects:
+- kind: ServiceAccount
+  name: $DEPLOY_USER
+  namespace: $NAMESPACE
+
+---
+## Install tiller in $NAMESPACE
+## helm init --service-account $TILLER --tiller-namespace $NAMESPACE --dry-run -o yaml
+EOF
+helm init --service-account $TILLER --tiller-namespace $NAMESPACE --history-max 5 $DRY_RUN
+
+
+if [ "$DRY_RUN" == "" ]; then
+  CONTEXT="$(kubectl config current-context)"
+  CLUSTER="$(kubectl config view -o "jsonpath={.contexts[?(@.name==\"$CONTEXT\")].context.cluster}")"
+  SERVER="$(kubectl config view -o "jsonpath={.clusters[?(@.name==\"$CLUSTER\")].cluster.server}")"
+
+  SECRET="$(kubectl get serviceaccount "$DEPLOY_USER" -n "$NAMESPACE" -o 'jsonpath={.secrets[0].name}')"
+  CA_CRT_DATA="$(kubectl get secret "$SECRET" -n "$NAMESPACE" -o "jsonpath={.data.ca\.crt}" | openssl enc -d -base64 -A)"
+  TOKEN="$(kubectl get secret "$SECRET" -n "$NAMESPACE" -o "jsonpath={.data.token}" | openssl enc -d -base64 -A)"
+
+  echo "Namespace configured"
+  echo "Create a KUBE_CONFIG to perform the deployment:"
+  echo
+  echo "  create-kubeconfig $DEPLOY_USER --namespace=$NAMESPACE"
+  echo
+  echo
+  echo "Or configure GitLab with the following settings:"
+  echo
+  echo "  API URL: $SERVER"
+  echo "  CA Certificate:"
+  echo
+  echo "$CA_CRT_DATA"
+  echo
+  echo "  Project namespace: $NAMESPACE"
+  echo "  Token:             $TOKEN"
+fi
