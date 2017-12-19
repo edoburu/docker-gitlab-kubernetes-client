@@ -7,6 +7,9 @@ if [ -z "$1" -o -z "$2" ]; then
   exit 1
 fi
 
+KUBE_NAMESPACE="${KUBE_NAMESPACE:-default}"
+TILLER_NAMESPACE="${TILLER_NAMESPACE:-$KUBE_NAMESPACE}"
+
 # Follow the app=$CI_ENVIRONMENT_SLUG label that GitLab needs to link releases
 test -e "$HOME/.helm" || helm init --client-only
-helm upgrade --install --namespace "${KUBE_NAMESPACE:-default}" --reset-values --set="nameOverride=$CI_ENVIRONMENT_SLUG" "$@"
+helm upgrade --install --tiller-namespace "$TILLER_NAMESPACE" --namespace "$KUBE_NAMESPACE" --reset-values --set="nameOverride=$CI_ENVIRONMENT_SLUG" "$@"

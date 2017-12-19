@@ -101,7 +101,7 @@ rules:
   verbs: ["list"]
 - apiGroups: [""]
   resources: ["secrets"]
-  verbs: ["create"]
+  verbs: ["create", "delete"]
 
 ---
 ## Associate deploy role with $DEPLOY_USER accout
