@@ -21,7 +21,7 @@ In ``.gitlab-ci.yml``:
       when: manual
       script:
       - create-image-pull-secret "$CI_PROJECT_PATH_SLUG-registry"
-      - create-release "RELEASE_NAME" "CHART_DIR" -f "values-$CI_ENVIRONMENT_SLUG.yml" --set="imageTag=$CI_IMAGE_TAG"
+      - create-release "RELEASE_NAME" "CHART_DIR" -f "values-$CI_ENVIRONMENT_SLUG.yml" --set="imageTag=$CI_COMMIT_TAG"
       only:
       - tags
 
@@ -30,7 +30,7 @@ Or run the commands manually:
 
 .. code-block:: bash
 
-  helm upgrade --install --namespace "$KUBE_NAMESPACE" --reset-values "RELEASE_NAME" "CHART_DIR" -f "values-$CI_ENVIRONMENT_SLUG.yml" --set="imageTag=$CI_IMAGE_TAG,nameOverride=$CI_ENVIRONMENT_SLUG"
+  helm upgrade --install --namespace "$KUBE_NAMESPACE" --reset-values "RELEASE_NAME" "CHART_DIR" -f "values-$CI_ENVIRONMENT_SLUG.yml" --set="imageTag=$CI_COMMIT_TAG,nameOverride=$CI_ENVIRONMENT_SLUG"
 
 It's assumed that the namespace is already set-up.
 This can be done using:
