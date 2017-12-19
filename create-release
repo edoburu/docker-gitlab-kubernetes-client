@@ -8,7 +8,22 @@ if [ -z "$1" -o -z "$2" ]; then
 fi
 
 KUBE_NAMESPACE="${KUBE_NAMESPACE:-default}"
-TILLER_NAMESPACE="${TILLER_NAMESPACE:-$KUBE_NAMESPACE}"
+
+# Automatically use a namespace-based tiller if available,
+# or the cluster-wide installed version if this is possible.
+if [ "$(kubectl auth can-i create pods --subresource=portforward --namespace=kube-system)" = "yes" ]; then
+  # Can connect with central installed Tiller, use it to deploy the project
+  # Note this could mean that deployments have full cluster-admin access!
+  TILLER_NAMESPACE="${TILLER_NAMESPACE:-kube-system}"
+  echo "Using cluster-wide tiller installation"
+elif [ "$(kubectl auth can-i create pods --subresource=portforward --namespace=$NAMESPACE)" = "yes" ]; then
+  # Can connect with namespace based Tiller
+  TILLER_NAMESPACE="${TILLER_NAMESPACE:-$KUBE_NAMESPACE}"
+  echo "Using tiller in namespace $TILLER_NAMESPACE"
+else
+  echo "No RBAC permission to contact to tiller in either 'kube-system' or '$NAMESPACE'" >&2
+  exit 1
+fi
 
 # Follow the app=$CI_ENVIRONMENT_SLUG label that GitLab needs to link releases
 test -e "$HOME/.helm" || helm init --client-only
