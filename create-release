@@ -12,7 +12,7 @@ KUBE_NAMESPACE="${KUBE_NAMESPACE:-default}"
 # Automatically use a namespace-based tiller if available,
 # or the cluster-wide installed version if this is possible.
 if [ -z "$TILLER_NAMESPACE" ]; then
-  if [ -n "$( kubectl get pods --namespace=$KUBE_NAMESPACE -l 'app=helm,name=tiller' -o name)"] then
+  if [ -n "$( kubectl get pods --namespace=$KUBE_NAMESPACE -l 'app=helm,name=tiller' -o name)" ]; then
     echo "Found namespace-based tiller installation"
     TILLER_NAMESPACE=$KUBE_NAMESPACE
   elif [ "$(kubectl auth can-i create pods --subresource=portforward --namespace=kube-system)" = "yes" ]; then
