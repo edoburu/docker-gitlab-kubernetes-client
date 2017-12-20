@@ -7,6 +7,8 @@ if [ -z "$1" -o -z "$2" ]; then
   exit 1
 fi
 
+RELEASE_NAME="$1"
+APP_NAME=$CI_ENVIRONMENT_SLUG
 KUBE_NAMESPACE="${KUBE_NAMESPACE:-default}"
 
 # Automatically use a namespace-based tiller if available,
@@ -30,17 +32,17 @@ if [ -z "$TILLER_NAMESPACE" ]; then
 fi
 
 echo "Using tiller in namespace $TILLER_NAMESPACE"
-echo "Deploying app $CI_ENVIRONMENT_SLUG"
-
-test -n "$CI_COMMIT_TAG" || echo 'Warning: $CI_COMMIT_TAG is not set!' >&2
-
 echo "Current release:"
-helm ls --tiller-namespace "$TILLER_NAMESPACE" --namespace "$KUBE_NAMESPACE" $CI_ENVIRONMENT_SLUG
+helm ls --tiller-namespace "$TILLER_NAMESPACE" --namespace "$KUBE_NAMESPACE" $RELEASE_NAME
 
-# Follow the app=$CI_ENVIRONMENT_SLUG label that GitLab needs to link releases
-# helm init --client-only is only needed when using default charts
-helm upgrade --install --tiller-namespace "$TILLER_NAMESPACE" --namespace "$KUBE_NAMESPACE" --reset-values --set="nameOverride=$CI_ENVIRONMENT_SLUG" "$@"
+echo
+echo "Deploying app $APP_NAME (git ${CI_COMMIT_TAG:-$CI_COMMIT_REF_NAME} $CI_COMMIT_SHA)"
+set -x
+helm upgrade --install --tiller-namespace "$TILLER_NAMESPACE" --namespace "$KUBE_NAMESPACE" --reset-values --set="nameOverride=$APP_NAME" "$@"
+{ set +x; } 2>/dev/null
+
 echo
 echo "Follow the release status using:"
 echo
-echo "  helm status --tiller-namespace=$TILLER_NAMESPACE $1"
+echo "  helm status --tiller-namespace=$TILLER_NAMESPACE $RELEASE_NAME"
+echo
