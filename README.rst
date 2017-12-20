@@ -3,16 +3,16 @@ docker-kubernetes-client
 
 This is a small image that allows to run ``git``, ``kubectl`` and ``helm``.
 
-Usage from GitLab
------------------
+It also provides some convenient commands to perform a release.
 
-This can be used as GitLab runner image:
+Usage
+-----
 
-In ``.gitlab-ci.yml``:
+Perform the deployment from ``.gitlab-ci.yml``:
 
 .. code-block:: yaml
 
-    job_name:
+    deploy to production:
       stage: deploy
       image: edoburu/kubernetes-client
       environment:
@@ -20,26 +20,62 @@ In ``.gitlab-ci.yml``:
         url: http://example.com/
       when: manual
       script:
-      - create-image-pull-secret "$CI_PROJECT_PATH_SLUG-registry"
-      - create-release "RELEASE_NAME" "CHART_DIR" -f "values-$CI_ENVIRONMENT_SLUG.yml" --set="imageTag=$CI_COMMIT_TAG"
+      - helm upgrade --install --tiller-namespace="$KUBE_NAMESPACE" --namespace "$KUBE_NAMESPACE" --reset-values "RELEASE_NAME" "CHART_DIR" -f "values-$CI_ENVIRONMENT_SLUG.yml" --set="imageTag=$CI_COMMIT_TAG,nameOverride=$CI_ENVIRONMENT_SLUG"
       only:
       - tags
 
-
-Or run the commands manually:
-
-.. code-block:: bash
-
-  helm upgrade --install --namespace "$KUBE_NAMESPACE" --reset-values "RELEASE_NAME" "CHART_DIR" -f "values-$CI_ENVIRONMENT_SLUG.yml" --set="imageTag=$CI_COMMIT_TAG,nameOverride=$CI_ENVIRONMENT_SLUG"
-
-It's assumed that the namespace is already set-up.
-This can be done using:
+Instead of running ``helm`` directly, you can also use the more friendly ``create-release`` script:
 
 .. code-block:: bash
 
-    docker run --rm  -v "$HOME/.kube:/root/.kube" edoburu/gitlab-kubernetes-client create-namespace mynamespace
+    create-release "RELEASE_NAME" "CHART_DIR" -f "values-$CI_ENVIRONMENT_SLUG.yml" --set="imageTag=$CI_COMMIT_TAG"
 
-This installs Tiller in a single namespace, with a ``tiller`` and ``deploy`` user::
+It's assumed you want to create a ``values-{env}.yml`` with specific deployment configurations per environment.
+
+Helm is already initialized, so no ``helm init --client-only`` is needed.
+When you install charts from the standard repositories, upgrade first: ``helm repo update``
+
+
+Preparation
+-----------
+
+Making sure Kubernetes can access your GitLab container registry
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Create an access token in your GitLab account settings.
+
+2. Make sure the container registry can be accessed by kubernetes, e.g.::
+
+    kubectl create secret gitlab-registry $NAME -n $NAMESPACE --docker-server=registry.example.com --docker-username=USERNAME --docker-email=EMAIL --docker-password=ACCESS_TOKEN
+
+3. Use that secret in the deployment:
+
+.. code-block:: yaml
+
+    imagePullSecrets:
+      - name: gitlab-registry
+
+
+Make sure GitLab can access Kubernetes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. First, create a namespace where the application will be deployed at.
+   There is a helper script to do everything:
+
+.. code-block:: bash
+
+    docker run --rm -v "$HOME/.kube:/root/.kube" edoburu/gitlab-kubernetes-client create-namespace MY_NAMESPACE
+
+This installs Tiller in a single namespace, with a ``tiller`` and ``deploy`` user.
+You can pass ``--dry-run`` to see the configuration it would apply.
+
+2. Next, configure the "Kubernetes" integration in the GitLab project.
+   The ``create-namespace`` already gave all values for it,
+   but you can also request them again:
+
+.. code-block:: bash
+
+    docker run --rm -v "$HOME/.kube:/root/.kube" edoburu/gitlab-kubernetes-client get-gitlab-settings USER_NAME --namespace=NAMESPACE
 
 
 Development

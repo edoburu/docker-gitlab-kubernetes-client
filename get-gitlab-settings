@@ -1,0 +1,36 @@
+#!/bin/sh
+set -e
+
+if [ -z "$1" ]; then
+  echo "Usage: $0 USERNAME [--namespace=NAMESPACE]" >&2
+  exit 1
+fi
+
+function _kubectl() {
+  kubectl $@ $kubectl_options
+}
+
+DEPLOY_USER="$1"
+kubectl_options="${@:2}"
+
+CONTEXT="$(kubectl config current-context)"
+CLUSTER="$(kubectl config view -o "jsonpath={.contexts[?(@.name==\"$CONTEXT\")].context.cluster}")"
+SERVER="$(kubectl config view -o "jsonpath={.clusters[?(@.name==\"$CLUSTER\")].cluster.server}")"
+
+SECRET="$(_kubectl get serviceaccount "$DEPLOY_USER" -o 'jsonpath={.secrets[0].name}')"
+if [ -z "$SECRET" ]; then
+  echo "Service account $DEPLOY_USER not found" >&2
+  exit 1
+fi
+CA_CRT_DATA="$(_kubectl get secret "$SECRET" -o "jsonpath={.data.ca\.crt}" | openssl enc -d -base64 -A)"
+TOKEN="$(_kubectl get secret "$SECRET" -o "jsonpath={.data.token}" | openssl enc -d -base64 -A)"
+
+echo "Configure GitLab with the following settings:"
+echo
+echo "  API URL: $SERVER"
+echo "  CA Certificate:"
+echo
+echo "$CA_CRT_DATA"
+echo
+echo "  Project namespace: ${NAMESPACE:-(your namespace)}"
+echo "  Token:             $TOKEN"

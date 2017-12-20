@@ -128,27 +128,13 @@ helm init --skip-refresh --upgrade --service-account $TILLER --tiller-namespace 
 
 
 if [ "$DRY_RUN" == "" ]; then
-  CONTEXT="$(kubectl config current-context)"
-  CLUSTER="$(kubectl config view -o "jsonpath={.contexts[?(@.name==\"$CONTEXT\")].context.cluster}")"
-  SERVER="$(kubectl config view -o "jsonpath={.clusters[?(@.name==\"$CLUSTER\")].cluster.server}")"
-
-  SECRET="$(kubectl get serviceaccount "$DEPLOY_USER" -n "$NAMESPACE" -o 'jsonpath={.secrets[0].name}')"
-  CA_CRT_DATA="$(kubectl get secret "$SECRET" -n "$NAMESPACE" -o "jsonpath={.data.ca\.crt}" | openssl enc -d -base64 -A)"
-  TOKEN="$(kubectl get secret "$SECRET" -n "$NAMESPACE" -o "jsonpath={.data.token}" | openssl enc -d -base64 -A)"
-
   echo "Namespace configured"
-  echo "Create a KUBE_CONFIG to perform the deployment:"
+  export NAMESPACE
+  ./get-gitlab-settings $DEPLOY_USER --namespace=$NAMESPACE
+
+  echo
+  echo
+  echo "Or, create a KUBE_CONFIG to perform the deployment:"
   echo
   echo "  create-kubeconfig $DEPLOY_USER --namespace=$NAMESPACE"
-  echo
-  echo
-  echo "Or configure GitLab with the following settings:"
-  echo
-  echo "  API URL: $SERVER"
-  echo "  CA Certificate:"
-  echo
-  echo "$CA_CRT_DATA"
-  echo
-  echo "  Project namespace: $NAMESPACE"
-  echo "  Token:             $TOKEN"
 fi
