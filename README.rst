@@ -5,6 +5,9 @@ This is a small image that allows to run ``git``, ``kubectl`` and ``helm``.
 
 It also provides some convenient commands to perform a release.
 
+Helm is already initialized, so no ``helm init --client-only`` is needed.
+When you install charts from the standard repositories, upgrade first: ``helm repo update``
+
 Usage
 -----
 
@@ -20,7 +23,14 @@ Perform the deployment from ``.gitlab-ci.yml``:
         url: http://example.com/
       when: manual
       script:
-      - helm upgrade --install --tiller-namespace="$KUBE_NAMESPACE" --namespace "$KUBE_NAMESPACE" --reset-values "RELEASE_NAME" "CHART_DIR" -f "values-$CI_ENVIRONMENT_SLUG.yml" --set="imageTag=$CI_COMMIT_TAG,nameOverride=$CI_ENVIRONMENT_SLUG"
+      - helm upgrade
+            --install
+            --tiller-namespace="$KUBE_NAMESPACE"
+            --namespace "$KUBE_NAMESPACE"
+            --reset-values
+            --values "values-$CI_ENVIRONMENT_SLUG.yml"
+            --set="imageTag=$CI_COMMIT_TAG,nameOverride=$CI_ENVIRONMENT_SLUG"
+            "RELEASE_NAME" "CHART_DIR"
       only:
       - tags
 
@@ -28,12 +38,11 @@ Instead of running ``helm`` directly, you can also use the more friendly ``creat
 
 .. code-block:: bash
 
-    create-release "RELEASE_NAME" "CHART_DIR" -f "values-$CI_ENVIRONMENT_SLUG.yml" --set="imageTag=$CI_COMMIT_TAG"
+    create-release "RELEASE_NAME" "CHART_DIR" --values "values-$CI_ENVIRONMENT_SLUG.yml" --set="imageTag=$CI_COMMIT_TAG"
 
-It's assumed you want to create a ``values-{env}.yml`` with specific deployment configurations per environment.
+Any ``helm`` arguments can be passed, including ``--dry-run --debug`` to see what would happen.
 
-Helm is already initialized, so no ``helm init --client-only`` is needed.
-When you install charts from the standard repositories, upgrade first: ``helm repo update``
+The examples assume you'll create a ``values-{env}.yml`` file with specific deployment configurations per environment.
 
 
 Preparation
@@ -42,25 +51,38 @@ Preparation
 Making sure Kubernetes can access your GitLab container registry
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. Create an access token in your GitLab account settings.
+1. Create an access token in your GitLab account settings and give it **read_registry** access.
 
-2. Make sure the container registry can be accessed by kubernetes, e.g.::
+2. Store the access token as a secret in Kubernetes:
 
-    kubectl create secret gitlab-registry $NAME -n $NAMESPACE --docker-server=registry.example.com --docker-username=USERNAME --docker-email=EMAIL --docker-password=ACCESS_TOKEN
+.. code-block:: bash
 
-3. Use that secret in the deployment:
+    kubectl create secret gitlab-registry $NAME \
+        --namespace=$NAMESPACE \
+        --docker-server=registry.example.com '
+        --docker-username=USERNAME \
+        --docker-email=EMAIL \
+        --docker-password=ACCESS_TOKEN
+
+3. Use that secret in the deployment template:
 
 .. code-block:: yaml
 
-    imagePullSecrets:
-      - name: gitlab-registry
+    kind: Deployment
+    spec:
+      template:
+        spec:
+          imagePullSecrets:
+            - name: gitlab-registry
+          containers:
+            - image: "{{ .Values.imageRepository }}:{{ .Values.imageTag }}"
 
 
 Make sure GitLab can access Kubernetes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. First, create a namespace where the application will be deployed at.
-   There is a helper script to do everything:
+Create a namespace where the application will be deployed at.
+There is a helper script to do everything for you:
 
 .. code-block:: bash
 
@@ -69,9 +91,9 @@ Make sure GitLab can access Kubernetes
 This installs Tiller in a single namespace, with a ``tiller`` and ``deploy`` user.
 You can pass ``--dry-run`` to see the configuration it would apply.
 
-2. Next, configure the "Kubernetes" integration in the GitLab project.
-   The ``create-namespace`` already gave all values for it,
-   but you can also request them again:
+Next, configure the "Kubernetes" integration in the GitLab project.
+The ``create-namespace`` already gave all values for it,
+but you can also request them again:
 
 .. code-block:: bash
 
