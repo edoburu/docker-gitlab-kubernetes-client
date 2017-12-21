@@ -82,7 +82,9 @@ Making sure Kubernetes can access your GitLab container registry
         --docker-email=EMAIL \
         --docker-password=ACCESS_TOKEN
 
-3. Use that secret in the deployment template:
+3. Use this secret in the ``imagePullSecrets``.
+
+Either in the `pod template <https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod>`_:
 
 .. code-block:: yaml
 
@@ -94,6 +96,8 @@ Making sure Kubernetes can access your GitLab container registry
             - name: gitlab-registry
           containers:
             - image: "{{ .Values.imageRepository }}:{{ .Values.imageTag }}"
+
+Or in the `serviceaccount of the Pod <https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#add-imagepullsecrets-to-a-service-account>`_.
 
 
 Make sure GitLab can access Kubernetes
