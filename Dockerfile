@@ -13,7 +13,8 @@ RUN apk add --update --no-cache ca-certificates git && \
     chmod +x /tmp/kubectl /tmp/helm
 
 # The image we keep
-FROM alpine:3.6
+# Ensure docker is present, so it can be used from gitlab too
+FROM docker:latest
 RUN apk add --update --no-cache git ca-certificates
 COPY --from=build /tmp/kubectl /tmp/helm /bin/
 COPY create-tmp-image-pull-secret create-kubeconfig create-namespace get-gitlab-settings create-release /bin/

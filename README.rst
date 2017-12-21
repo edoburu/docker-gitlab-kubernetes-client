@@ -15,9 +15,27 @@ Perform the deployment from ``.gitlab-ci.yml``:
 
 .. code-block:: yaml
 
+    image: edoburu/gitlab-kubernetes-client
+
+    stages:
+    - build
+    - deploy
+
+    before_script:
+      # Allow sh substitution to support both tags and commit releases.
+      - export IMAGE_TAG=${CI_COMMIT_TAG:-git_${CI_COMMIT_REF_NAME}_$CI_COMMIT_SHA}
+
+    build image:
+      # Some extra settings might be needed here depending on the runner config...
+      stage: build
+      script:
+      - docker build -t $CI_REGISTRY_IMAGE:$IMAGE_TAG .
+      - docker run --rm $CI_REGISTRY_IMAGE:$IMAGE_TAG /script/to/run/tests
+      - docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN $CI_REGISTRY
+      - docker push $CI_REGISTRY_IMAGE:$IMAGE_TAG
+
     deploy to production:
       stage: deploy
-      image: edoburu/kubernetes-client
       environment:
         name: production
         url: http://example.com/
@@ -29,7 +47,7 @@ Perform the deployment from ``.gitlab-ci.yml``:
             --namespace "$KUBE_NAMESPACE"
             --reset-values
             --values "values-$CI_ENVIRONMENT_SLUG.yml"
-            --set="imageTag=$CI_COMMIT_TAG,nameOverride=$CI_ENVIRONMENT_SLUG"
+            --set="imageTag=$IMAGE_TAG,nameOverride=$CI_ENVIRONMENT_SLUG"
             "RELEASE_NAME" "CHART_DIR"
       only:
       - tags
