@@ -12,6 +12,10 @@ NAMESPACE=$1
 TILLER=tiller
 DEPLOY_USER=deploy
 
+# This makes sure that only the helm client can access tiller (using a portforward).
+# Otherwise, any pod in the network can contact the tiller port and let it install random yml files.
+HELM_OVERRIDE="spec.template.spec.containers[0].command={/tiller,--listen=localhost:44134}"
+
 if [ "$2" == "--dry-run" ]; then
   CMD="cat"
   DRY_RUN="--dry-run -o yaml"
@@ -122,10 +126,9 @@ subjects:
 
 ---
 ## Install tiller in $NAMESPACE
-## helm init --service-account $TILLER --tiller-namespace $NAMESPACE --dry-run -o yaml
+## helm init --service-account $TILLER --tiller-namespace $NAMESPACE --history-max 5 --override="$HELM_OVERRIDE" --dry-run -o yaml
 EOF
-helm init --skip-refresh --upgrade --service-account $TILLER --tiller-namespace $NAMESPACE --history-max 5 $DRY_RUN
-
+helm init --skip-refresh --upgrade --service-account $TILLER --tiller-namespace $NAMESPACE --history-max 5 --override="$HELM_OVERRIDE" $DRY_RUN
 
 if [ "$DRY_RUN" == "" ]; then
   echo "Namespace configured"
