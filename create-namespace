@@ -59,7 +59,7 @@ metadata:
   name: $TILLER
 rules:
 - apiGroups: ["", "extensions", "apps"]
-  resources: ["deployments", "replicasets", "pods", "configmaps", "ingresses", "secrets", "services", "namespaces", "persistentvolumeclaims"]
+  resources: ["deployments", "replicasets", "pods", "configmaps", "ingresses", "jobs", "secrets", "services", "namespaces", "persistentvolumeclaims"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"] # You can also use ["*"]
 
 ---
@@ -103,9 +103,15 @@ rules:
 - apiGroups: [""]
   resources: ["pods"]
   verbs: ["list"]
+#- apiGroups: [""]
+#  resources: ["pods/exec"]
+#  verbs: ["create"]
 - apiGroups: [""]
   resources: ["secrets"]
   verbs: ["create", "list", "delete"]
+#- apiGroups: ["", "extensions"]
+#  resources: ["deployments"]
+#  verbs: ["get", "watch"]
 
 ---
 ## Associate deploy role with $DEPLOY_USER accout
