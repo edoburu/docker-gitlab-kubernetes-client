@@ -12,7 +12,7 @@ function _kubectl() {
 
 DEPLOY_USER="$1"
 shift
-kubectl_options="$2"
+kubectl_options="$@"
 
 CONTEXT="$(kubectl config current-context)"
 CLUSTER="$(kubectl config view -o "jsonpath={.contexts[?(@.name==\"$CONTEXT\")].context.cluster}")"
