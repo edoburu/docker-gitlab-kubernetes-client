@@ -50,6 +50,9 @@ Perform the deployment from ``.gitlab-ci.yml``:
             "RELEASE_NAME" "CHART_DIR"
       only:
       - tags
+      - triggers
+      except:
+      - beta  # when part of trigger
 
 Instead of running ``helm`` directly, you can also use the more friendly ``create-release`` script:
 
@@ -66,6 +69,9 @@ The examples assume you'll create a ``values-{env}.yml`` file with specific depl
 
 Some extra settings might be needed to perform docker builds, this depends on your
 setup for `building docker images in GitLab <https://docs.gitlab.com/ce/ci/docker/using_docker_build.html>`_
+
+The 'trigger' feature can be used to allow redeploys for an updated base image.
+This can be used to automatically deploy security updates.
 
 
 Preparation
