@@ -3,7 +3,7 @@ set -e
 
 if [ -z "$1" -o -z "$2" ]; then
   echo "Usage: $0 RELEASE-NAME CHART_DIR [helm-args]" >&2
-  echo "e.g.: $0 myapp /myapp/deploy/chart/ -f "values-${CI_ENVIRONMENT_SLUG:-prd}.yml" --set="imageTag=${CI_COMMIT_TAG:-1.0}",nameOverride=\$CI_ENVIRONMENT_SLUG"
+  echo "e.g.: $0 myapp /myapp/deploy/chart/ -f "values-${CI_ENVIRONMENT_SLUG:-prd}.yml" --set="image.tag=${CI_COMMIT_TAG:-1.0}",nameOverride=\$CI_ENVIRONMENT_SLUG"
   exit 1
 fi
 
