@@ -112,8 +112,8 @@ At the end, it prints all settings needed for
 You can pass ``--dry-run`` to see the configuration it would apply.
 
 
-Making sure Kubernetes can access your GitLab container registry
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Make sure Kubernetes can access your GitLab container registry
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Create a `personal access token <https://docs.gitlab.com/ce/user/profile/personal_access_tokens.html>`_
    in your GitLab account settings and give it **read_registry** access.
