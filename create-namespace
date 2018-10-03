@@ -58,7 +58,7 @@ metadata:
   namespace: $NAMESPACE
   name: $TILLER
 rules:
-- apiGroups: ["", "extensions", "apps"]
+- apiGroups: ["", "batch", "extensions", "apps"]
   resources: ["deployments", "replicasets", "pods", "configmaps", "ingresses", "jobs", "secrets", "services", "namespaces", "persistentvolumeclaims"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"] # You can also use ["*"]
 
@@ -109,9 +109,12 @@ rules:
 - apiGroups: [""]
   resources: ["secrets"]
   verbs: ["create", "list", "delete"]
-#- apiGroups: ["", "extensions"]
-#  resources: ["deployments"]
-#  verbs: ["get", "watch"]
+- apiGroups: ["", "extensions"]
+  resources: ["deployments"]
+  verbs: ["get", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get"]
 
 ---
 ## Associate deploy role with $DEPLOY_USER accout
