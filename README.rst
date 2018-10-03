@@ -20,7 +20,10 @@ Perform the deployment from ``.gitlab-ci.yml``:
 
     before_script:
       # Allow sh substitution to support both tags and commit releases.
-      - export IMAGE_TAG=${CI_COMMIT_TAG:-git_${CI_COMMIT_REF_NAME}_$CI_COMMIT_SHA}
+      # CI_PIPELINE_ID is useful to force redeploys on pipeline triggers
+      # CI_COMMIT_TAG is only filled for tags.
+      # CI_COMMIT_REF_NAME can be a tag or branch name
+      - export IMAGE_TAG=ci_${CI_PIPELINE_ID}_${CI_COMMIT_TAG:-git_${CI_COMMIT_REF_NAME}_$CI_COMMIT_SHA}
 
     build image:
       stage: build
@@ -43,7 +46,7 @@ Perform the deployment from ``.gitlab-ci.yml``:
             --namespace "$KUBE_NAMESPACE"
             --reset-values
             --values "values-$CI_ENVIRONMENT_SLUG.yml"
-            --set="imageTag=$IMAGE_TAG,nameOverride=$CI_ENVIRONMENT_SLUG"
+            --set="image.tag=$IMAGE_TAG,nameOverride=$CI_ENVIRONMENT_SLUG"
             "RELEASE_NAME" "CHART_DIR"
       only:
       - tags
@@ -52,7 +55,7 @@ Instead of running ``helm`` directly, you can also use the more friendly ``creat
 
 .. code-block:: bash
 
-    create-release "RELEASE_NAME" "CHART_DIR" --values "values-$CI_ENVIRONMENT_SLUG.yml" --set="imageTag=$CI_COMMIT_TAG"
+    create-release "RELEASE_NAME" "CHART_DIR" --values "values-$CI_ENVIRONMENT_SLUG.yml" --set="image.tag=$CI_COMMIT_TAG"
 
 Any ``helm`` arguments can be passed, including ``--dry-run --debug`` to see what would happen.
 
@@ -133,7 +136,7 @@ Either in the `pod template <https://kubernetes.io/docs/concepts/containers/imag
           imagePullSecrets:
             - name: gitlab-registry
           containers:
-            - image: "{{ .Values.imageRepository }}:{{ .Values.imageTag }}"
+            - image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
 
 Or in the `serviceaccount of the Pod <https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#add-imagepullsecrets-to-a-service-account>`_.
 
@@ -170,17 +173,3 @@ download the latest repository caches::
     helm repo update
 
 Afterwards, ``helm install stable/...`` works as expected.
-
-
-Development
------------
-
-To build this image::
-
-    docker build -t edoburu/gitlab-kubernetes-client .
-
-And release::
-
-    docker login
-    docker push edoburu/gitlab-kubernetes-client
-
