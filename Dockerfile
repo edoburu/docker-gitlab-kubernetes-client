@@ -3,8 +3,8 @@
 FROM alpine:3.8 as build
 MAINTAINER Diederik van der Boor <opensource@edoburu.nl>
 
-ARG HELM_VERSION=v2.10.0
-ARG KUBE_VERSION=v1.11.3
+ARG HELM_VERSION=v2.11.0
+ARG KUBE_VERSION=v1.12.2
 
 RUN apk add --update --no-cache ca-certificates curl tar gzip && \
     curl -Lo /tmp/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBE_VERSION}/bin/linux/amd64/kubectl && \
